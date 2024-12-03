@@ -696,11 +696,11 @@ def writedependence(nodes, edges, file):
             file.write('%i[label="%i: output r%i"];\n' % (node[0], node[0], node[2]))
     for edge in edges:
         if edge[0] == -2:
-            file.write('%i -> %i[label="Serialization"];n' % (edge[1], edge[2]))
+            file.write('%i -> %i[label="Serialization"];\n' % (edge[1], edge[2]))
         elif edge[0] == -1:
-            file.write('%i -> %i[label="Conflict"];n' % (edge[1], edge[2]))
+            file.write('%i -> %i[label="Conflict"];\n' % (edge[1], edge[2]))
         else:
-            file.write('%i -> %i[label="Data, r%i"];n' % (edge[1], edge[2], edge[0]))
+            file.write('%i -> %i[label="Data, r%i"];\n' % (edge[1], edge[2], edge[0]))
     file.write("}")
     
 def schedule():
