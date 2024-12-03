@@ -676,24 +676,24 @@ def writedependence(nodes, edges, file):
     for node in nodes:
         if node[1][0] == 0:  
             if node[1][1] == 0:
-                file.write('%i[label="%i: load r%i => r%i"];\n' % (node[0], node[0], node[1], node[3]))
+                file.write('%i[label="%i: load r%i => r%i"];\n' % (node[0], node[0], node[2], node[4]))
             else:
-                file.write('%i[label="%i: store r%i => r%i"];\n' % (node[0], node[0], node[1], node[3]))
+                file.write('%i[label="%i: store r%i => r%i"];\n' % (node[0], node[0], node[2], node[4]))
         elif node[1][0] == 1:  
-                file.write('%i[label="%i: loadI %i => r%i"];\n' % (node[0], node[0], node[1], node[3]))
+                file.write('%i[label="%i: loadI %i => r%i"];\n' % (node[0], node[0], node[2], node[4]))
         elif node[1][0] == 2:          
             if node[1][1] == 0:  
-                file.write('%i[label="%i: add r%i, r%i => r%i"];\n' % (node[0], node[0], node[1], node[2], node[3]))
+                file.write('%i[label="%i: add r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
             elif node[1][1] == 1:
-                file.write('%i[label="%i: sub r%i, r%i => r%i"];\n' % (node[0], node[0], node[1], node[2], node[3]))
+                file.write('%i[label="%i: sub r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
             elif node[1][1] == 2:   
-                file.write('%i[label="%i: mult r%i, r%i => r%i"];\n' % (node[0], node[0], node[1], node[2], node[3]))
+                file.write('%i[label="%i: mult r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
             elif node[1][1] == 3:  
-                file.write('%i[label="%i: lshift r%i, r%i => r%i"];\n' % (node[0], node[0], node[1], node[2], node[3]))
+                file.write('%i[label="%i: lshift r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
             else:
-                file.write('%i[label="%i: rshift r%i, r%i => r%i"];\n' % (node[0], node[0], node[1], node[2], node[3]))
+                file.write('%i[label="%i: rshift r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
         elif node[1][0] == 3:
-            file.write('%i[label="%i: output r%i"];\n' % (node[0], node[0], node[1]))
+            file.write('%i[label="%i: output r%i"];\n' % (node[0], node[0], node[2]))
     for edge in edges:
         if edge[0] == -2:
             file.write('%i -> %i[label="Serialization"];n' % (edge[1], edge[2]))
