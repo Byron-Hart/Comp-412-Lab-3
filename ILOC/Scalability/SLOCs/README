@@ -1,0 +1,13 @@
+Blocks used in the various timing tests to measure scalability as a function 
+of total lines of input code. Each block has a couple of loadI operations, 
+a lot of add operations, one store, and one output. The blocks are designed
+so that they have a demand for 20 registers (e.g., MaxLive = 20) and an 
+average Ready Queue length of 19. Thus, they really measure dependence on 
+input size -- that is, they hold register demand (lab 2), dependence graph 
+size (lab 3), and queue lengths (lab 3) uniform as the code gets longer.
+
+The subdirectory "larger" holds blocks with 256,000 and 512,000 operations.
+These are, in general, too large for student labs. They take too long to
+run in the auto-timing tests and the student labs often fail to handle a
+file of that size gracefully.
+

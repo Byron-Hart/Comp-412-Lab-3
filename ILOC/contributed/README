@@ -1,0 +1,6 @@
+Prior to Fall 2018, the register allocator was Lab 1.
+In Fall 2018, it became Lab 2.
+
+The names on directories and in comments in the ILOC code
+from earlier years have not been changed.  Thus 2013/lab1 
+contains example blocks intended for the allocator lab.

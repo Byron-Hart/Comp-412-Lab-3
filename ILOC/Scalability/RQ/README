@@ -1,0 +1,11 @@
+These blocks were designed to allow a user to measure the change in running time 
+of a COMP 412 Lab 3 scheduler as a function of the average size of the ready set
+(or "ready queue").
+
+The file name shows the expected ready set size.
+
+Each block is 64,000 lines in length. The blocks are long enough to establish the
+scheduler's behavior. They are of uniform length so that the timing differences
+should lie (at least primarily) in the handling of the ready set.
+
+
