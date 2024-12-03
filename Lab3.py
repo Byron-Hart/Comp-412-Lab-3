@@ -693,7 +693,7 @@ def writedependence(nodes, edges, file):
             else:
                 file.write('%i[label="%i: rshift r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
         elif node[1][0] == 3:
-            file.write('%i[label="%i: output r%i"];\n' % (node[0], node[0], node[2]))
+            file.write('%i[label="%i: output %i"];\n' % (node[0], node[0], node[2]))
     for edge in edges:
         if edge[0] == -2:
             file.write('%i -> %i[label="Serialization"];\n' % (edge[1], edge[2]))
@@ -756,13 +756,13 @@ def execute():
             writedependence(nodes, edges, dgfile)
             dgfile.close
             
-        file = open("scheduledILOC.i", "w")
+        """file = open("scheduledILOC.i", "w")
         #TODO
         curr = irHead
         while curr.data[0][0] != 9:
             printIRwithVR(curr.data, file)
             curr = curr.next
-        file.close()
+        file.close()"""
     else:
         print_error("Since there were errors in the input file, IR is not printed.")
         
