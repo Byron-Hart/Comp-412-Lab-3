@@ -1,0 +1,10 @@
+//NAME: Byron Hart
+//NETID: blh7
+
+Directions for building and invoking:
+Since the program is in Python, it does not need to be built, just run.
+Thus, executing schedule simply calls python to run Lab3.py with the command line arguments sent to schedule.
+
+Command Line Options for schedule:
+-h: Prints a list of valid command line arguments with descriptions of the function of each option.
+<name>, where <name> is a valid filepath: If <name> leads to valid ILOC, the scheduler will print reordered ILOC code to standard output.
