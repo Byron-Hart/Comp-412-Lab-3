@@ -903,7 +903,8 @@ def schedule():
             if node.latency == 0:
                 toremove.add(node)
                 for edge in node.edges:
-                    edge[1].children.remove(node)
+                    if node in edge[1].children:
+                        edge[1].children.remove(node)
                     if len(edge[1].children) == 0:
                         ready.add(edge[1])
                         
