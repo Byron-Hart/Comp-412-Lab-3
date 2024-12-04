@@ -21,8 +21,7 @@ class ScheduleNode:
         self.vr1 = vr1
         self.vr2 = vr2
         self.vr3 = vr3
-        self.descendants = 0
-        self.visited = False
+        self.latency = 0
         self.latencyToRoot = 0
         self.priority = 0
         self.children = []
@@ -629,7 +628,13 @@ def dependence():
         #If eliminates NOPs
         if currNode.data[0][0] >= 0 and currNode.data[0][0] <= 3:
             node = ScheduleNode(cycle, currNode.data[0], currNode.data[2], currNode.data[6], currNode.data[10])
-            
+            if node.ilocType[0] == 0:
+                node.latency = 6
+            elif node.ilocType == (2,2):
+                node.latency = 3
+            else:
+                node.latency = 1
+
             #Load
             if currNode.data[0] == (0,0):
                 #Defines
@@ -638,13 +643,13 @@ def dependence():
                 #Uses
                 otherNode = dependencemap[currNode.data[2]]
                 edges.append((currNode.data[2], cycle, otherNode))
-                nodes[otherNode - 1].edges.append((currNode.data[2], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[2], node, otherNode))
                 node.children.append(nodes[otherNode - 1])
                 
                 #Conflict to most recent store
                 if recentStore is not None:
                     edges.append((-1, cycle, recentStore))
-                    nodes[recentStore - 1].edges.append((-1, cycle, recentStore))
+                    nodes[recentStore - 1].edges.append((-1, node, recentStore))
                     node.children.append(nodes[recentStore - 1])
 
                 allLoads.append(cycle)
@@ -654,28 +659,28 @@ def dependence():
                 #Uses
                 otherNode = dependencemap[currNode.data[2]]
                 edges.append((currNode.data[2], cycle, otherNode))
-                nodes[otherNode - 1].edges.append((currNode.data[2], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[2], node, otherNode))
                 node.children.append(nodes[otherNode - 1])
 
                 otherNode = dependencemap[currNode.data[10]]
                 edges.append((currNode.data[10], cycle, otherNode))
-                nodes[otherNode - 1].edges.append((currNode.data[10], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[10], node, otherNode))
                 node.children.append(nodes[otherNode - 1])
          
                 #Serialization/Conflict edges
                 if recentStore is not None:
                     edges.append((-2, cycle, recentStore))
-                    nodes[recentStore - 1].edges.append((-2, cycle, recentStore))
+                    nodes[recentStore - 1].edges.append((-2, node, recentStore))
                     node.children.append(nodes[recentStore - 1])
                     
                 for load in allLoads:
                     edges.append((-2, cycle, load))
-                    nodes[load - 1].edges.append((-2, cycle, load))
+                    nodes[load - 1].edges.append((-2, node, load))
                     node.children.append(nodes[load - 1])
                     
                 for output in allOutputs:
                     edges.append((-2, cycle, output))
-                    nodes[output - 1].edges.append((-2, cycle, output))
+                    nodes[output - 1].edges.append((-2, node, output))
                     node.children.append(nodes[output - 1])
                     
                 recentStore = cycle
@@ -693,25 +698,25 @@ def dependence():
                 #Uses
                 otherNode = dependencemap[currNode.data[2]]
                 edges.append((currNode.data[2], cycle, otherNode))
-                nodes[otherNode - 1].edges.append((currNode.data[2], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[2], node, otherNode))
                 node.children.append(nodes[otherNode - 1])
 
                 otherNode = dependencemap[currNode.data[6]]
                 edges.append((currNode.data[6], cycle, otherNode))
-                nodes[otherNode - 1].edges.append((currNode.data[6], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[6], node, otherNode))
                 node.children.append(nodes[otherNode - 1])
     
             if currNode.data[0][0] == 3:        
                 #Serialization to most recent output
                 if recentOutput is not None:
                     edges.append((-2, cycle, recentOutput))
-                    nodes[recentOutput - 1].edges.append((-2, cycle, recentOutput))
+                    nodes[recentOutput - 1].edges.append((-2, node, recentOutput))
                     node.children.append(nodes[recentOutput - 1])
                     
                 #Conflict to most recent store
                 if recentStore is not None:
                     edges.append((-1, cycle, recentStore))
-                    nodes[recentStore - 1].edges.append((-1, cycle, recentStore))
+                    nodes[recentStore - 1].edges.append((-1, node, recentStore))
                     node.children.append(nodes[recentStore - 1])
                     
                 recentOutput = cycle
@@ -728,9 +733,6 @@ def dependence():
 def writedependence(nodes, edges, file):
     file.write("digraph DependenceGraph{\n")
     for node in nodes:
-        """print(node.children)
-        print(node.edges)
-        print()"""
         if node.ilocType[0] == 0:  
             if node.ilocType[1] == 0:
                 file.write('%i[label="%i: load r%i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr3))
@@ -763,10 +765,6 @@ def writedependence(nodes, edges, file):
 def writedependencepriorities(nodes, edges, file):
     file.write("digraph DependenceGraph{\n")
     for node in nodes:
-        """print(node.num)
-        print(node.children)
-        print(node.edges)
-        print()"""
         if node.ilocType[0] == 0:  
             if node.ilocType[1] == 0:
                 file.write('%i[label="%i: load r%i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr3, node.priority))
@@ -799,28 +797,15 @@ def writedependencepriorities(nodes, edges, file):
 def postorder(root):
     totalroottime = 0
     totaltemptime = 0
-    totalsettime = 0
-    totaluniontime = 0
     currentRootIndex = 0
     currentLatency = 0
-    viewedNodes = 0
     stack = []
  
     while (root != None or len(stack) != 0):
         if (root != None):
             start = time.time()
-            if root.visited:
-                viewedNodes -= 1
-            if root.ilocType[0] == 0:
-                currentLatency += 6
-            elif root.ilocType == (2,2):
-                currentLatency += 3
-            else:
-                currentLatency += 1
-            print("Root")
-            print(root.num)
-            print()
-            stack.append((root, currentRootIndex, currentLatency, viewedNodes))
+            currentLatency += root.latency
+            stack.append((root, currentRootIndex, currentLatency))
             currentRootIndex = 0
  
             if (len(root.children) >= 1):
@@ -835,77 +820,21 @@ def postorder(root):
         
         starttemp = time.time()
 
-        #start = time.time()
         temp = stack.pop()
-        """descendants = set()
-        descendantslist = []
-        for child in temp[0].children:
-            descendantslist.append(child.descendants)
-            descendants.add(child.num) 
-        startunion = time.time()
-        descendants = descendants.union(*descendantslist)
-        endunion = time.time()
-        totaluniontime += endunion-startunion
-        temp[0].descendants = descendants
-        end = time.time()
-        totalsettime += end-start"""
-        if not temp[0].visited:
-            temp[0].descendants += viewedNodes - temp[3]
-            print("Node descendants")
-            print(temp[0].num)
-            print(temp[0].descendants)
-            print(viewedNodes)
-            print(temp[3])
-            print()
-        viewedNodes += 1
-        temp[0].visited = True
         
         if currentLatency > temp[0].latencyToRoot:
             temp[0].latencyToRoot = currentLatency
-        if temp[0].ilocType[0] == 0:
-            currentLatency -= 6
-        elif temp[0].ilocType == (2,2):
-            currentLatency -= 3
-        else:
-            currentLatency -= 1
+            
+        currentLatency -= temp[0].latency
 
         
         while (len(stack) != 0 and temp[1] == len(stack[-1][0].children) - 1):
-            #start = time.time()
-
             temp = stack.pop()
-
-            """descendants = set()
-            descendantslist = []
-            for child in temp[0].children:
-                descendantslist.append(child.descendants)
-                descendants.add(child.num) 
-            startunion = time.time()
-            descendants = descendants.union(*descendantslist)
-            endunion = time.time()
-            totaluniontime += endunion-startunion
-            temp[0].descendants = descendants
-            end = time.time()
-            totalsettime += end-start"""
-            if not temp[0].visited:
-                temp[0].descendants += viewedNodes - temp[3]
-                print("Node descendants")
-                print(temp[0].num)
-                print(temp[0].descendants)
-                print(viewedNodes)
-                print(temp[3])
-                print()
-            viewedNodes += 1
-            temp[0].visited = True
 
             if currentLatency > temp[0].latencyToRoot:
                 temp[0].latencyToRoot = currentLatency
-            if temp[0].ilocType[0] == 0:
-                currentLatency -= 6
-            elif temp[0].ilocType == (2,2):
-                currentLatency -= 3
-            else:
-                currentLatency -= 1
+                
+            currentLatency -= temp[0].latency
 
         if (len(stack) != 0): 
             root = stack[-1][0].children[temp[1] + 1]
@@ -917,10 +846,6 @@ def postorder(root):
     print(totalroottime)
     print("Total temp time")
     print(totaltemptime)
-    print("Total set time")
-    print(totalsettime)
-    print("Total union time")
-    print(totaluniontime)
  
 def calculatePriorities():
     global nodes
@@ -937,12 +862,15 @@ def calculatePriorities():
     for root in roots:
         postorder(root)
     end = time.time()
-    print("Calc latencies + descendants with treewalk")
+    print("Calc latencies with treewalk")
     print(end-start)
     
     start = time.time()
     for node in nodes:
-        node.priority = 10 * node.latencyToRoot + node.descendants
+        parentLatencies = 0
+        for edge in node.edges:
+            parentLatencies += edge[1].latency
+        node.priority = 10 * node.latencyToRoot + parentLatencies
     end = time.time()
     print("Calc priorities")
     print(end-start)
