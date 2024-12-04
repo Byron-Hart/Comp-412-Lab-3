@@ -602,6 +602,8 @@ def rename():
     maxVR = VRName
 
 def dependence():
+    global nodes
+    
     start = time.time()
     dependencemap = {}
     cycle = 1
@@ -720,7 +722,7 @@ def dependence():
         cycle += 1
     end = time.time()
     print(end-start)
-    return nodes,edges
+    return edges
     
 def writedependence(nodes, edges, file):
     file.write("digraph DependenceGraph{\n")
@@ -861,13 +863,22 @@ def calculatePriorities():
     for node in nodes:
         if node.edges == []:
             roots.append(node)
+    end = time.time()
+    print("Find roots")
+    print(end-start)
             
+    start = time.time()
     for root in roots:
         postorder(root)
+    end = time.time()
+    print("Calc latencies + descendants with treewalk")
+    print(end-start)
     
+    start = time.time()
     for node in nodes:
         node.priority = 10 * node.latencyToRoot + len(node.descendants)
     end = time.time()
+    print("Calc priorities")
     print(end-start)
 
 def schedule():
@@ -921,7 +932,7 @@ def execute():
     if success:
         rename()
         
-        nodes, edges = dependence();
+        edges = dependence();
         if gflag:
             dgfile = open("dependencegraph.dot", "w")
             writedependence(nodes, edges, dgfile)
