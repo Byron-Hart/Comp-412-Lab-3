@@ -604,7 +604,6 @@ def rename():
 def dependence():
     global nodes
     
-    start = time.time()
     dependencemap = {}
     cycle = 1
     
@@ -726,8 +725,6 @@ def dependence():
            
         currNode = currNode.next
         cycle += 1
-    end = time.time()
-    print(end-start)
     return edges
     
 def writedependence(nodes, edges, file):
@@ -795,15 +792,12 @@ def writedependencepriorities(nodes, edges, file):
     file.write("}")
 
 def postorder(root):
-    totalroottime = 0
-    totaltemptime = 0
     currentRootIndex = 0
     currentLatency = 0
     stack = []
  
     while (root != None or len(stack) != 0):
         if (root != None):
-            start = time.time()
             currentLatency += root.latency
             stack.append((root, currentRootIndex, currentLatency))
             currentRootIndex = 0
@@ -813,13 +807,8 @@ def postorder(root):
             else:
                 root = None
             
-            end = time.time()
-            totalroottime += end-start
-
             continue
         
-        starttemp = time.time()
-
         temp = stack.pop()
         
         if currentLatency > temp[0].latencyToRoot:
@@ -840,40 +829,22 @@ def postorder(root):
             root = stack[-1][0].children[temp[1] + 1]
             currentRootIndex = temp[1] + 1
         
-        endtemp = time.time()
-        totaltemptime += endtemp-starttemp
-    print("Total root time")
-    print(totalroottime)
-    print("Total temp time")
-    print(totaltemptime)
  
 def calculatePriorities():
     global nodes
-    start = time.time()
     roots = []
     for node in nodes:
         if node.edges == []:
             roots.append(node)
-    end = time.time()
-    print("Find roots")
-    print(end-start)
             
-    start = time.time()
     for root in roots:
         postorder(root)
-    end = time.time()
-    print("Calc latencies with treewalk")
-    print(end-start)
     
-    start = time.time()
     for node in nodes:
         parentLatencies = 0
         for edge in node.edges:
             parentLatencies += edge[1].latency
         node.priority = 10 * node.latencyToRoot + parentLatencies
-    end = time.time()
-    print("Calc priorities")
-    print(end-start)
 
 def schedule():
     cycle = 1
@@ -985,6 +956,7 @@ def initializeFile(ilocFilePath):
         print(helpstring)
         return False
 
+start = time.time()
 #OpCode=0, SR1=1,  VR1=2,  PR1=3,  NU1=4,  SR2,  VR2,  PR2,  NU2,  SR3,  VR3,  PR3,  NU3 
 nodes = []
 maxLive = 0
@@ -1023,3 +995,5 @@ else:
     else:
         if initializeFile(sys.argv[1]):
             execute()
+end = time.time()
+print(end-start)
