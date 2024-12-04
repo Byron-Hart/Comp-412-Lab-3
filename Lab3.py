@@ -825,14 +825,16 @@ def postorder(root):
 
             continue
         
-        start = time.time()
+        starttemp = time.time()
 
-        temp = stack.pop()
         start = time.time()
+        temp = stack.pop()
         descendants = set()
+        descendantslist = []
         for child in temp[0].children:
-            descendants = descendants.union(child.descendants)
-            descendants.add(child.num)   
+            descendantslist.append(child.descendants)
+            descendants.add(child.num) 
+        descendants = descendants.union(*descendantslist)
         temp[0].descendants = descendants
         end = time.time()
         totalsettime += end-start
@@ -853,10 +855,11 @@ def postorder(root):
             temp = stack.pop()
 
             descendants = set()
+            descendantslist = []
             for child in temp[0].children:
-                descendants = descendants.union(child.descendants)
-                descendants.add(child.num)
-            
+                descendantslist.append(child.descendants)
+                descendants.add(child.num) 
+            descendants = descendants.union(*descendantslist)
             temp[0].descendants = descendants
             end = time.time()
             totalsettime += end-start
@@ -874,8 +877,8 @@ def postorder(root):
             root = stack[-1][0].children[temp[1] + 1]
             currentRootIndex = temp[1] + 1
         
-        end = time.time()
-        totaltemptime += end-start
+        endtemp = time.time()
+        totaltemptime += endtemp-starttemp
     print("Total root time")
     print(totalroottime)
     print("Total temp time")
