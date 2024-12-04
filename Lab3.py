@@ -921,7 +921,7 @@ def execute():
             writedependence(nodes, edges, dgfile)
             dgfile.close
 
-        calculatePriorities(nodes)
+        calculatePriorities()
 
         if gflag:
             dgpfile = open("dependencegraphpriorities.dot", "w")
