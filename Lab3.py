@@ -1,5 +1,6 @@
 import math
 import sys
+import time 
 
 class IRnode:
     def __init__(self, data):
@@ -602,6 +603,7 @@ def rename():
     maxVR = VRName
 
 def dependence():
+    start = time.time()
     dependencemap = {}
     cycle = 1
     
@@ -717,6 +719,8 @@ def dependence():
            
         currNode = currNode.next
         cycle += 1
+    end = time.time()
+    print(end-start)
     return nodes,edges
     
 def writedependence(nodes, edges, file):
@@ -844,7 +848,9 @@ def postorder(root):
             root = stack[-1][0].children[temp[1] + 1]
             currentRootIndex = temp[1] + 1
  
-def calculatePriorities(nodes):
+def calculatePriorities():
+    global nodes
+    start = time.time()
     roots = []
     for node in nodes:
         if node.edges == []:
@@ -855,8 +861,10 @@ def calculatePriorities(nodes):
     
     for node in nodes:
         node.priority = 10 * node.latencyToRoot + len(node.descendants)
-            
-def schedule(nodes):
+    end = time.time()
+    print(end-start)
+
+def schedule():
     cycle = 1
     ready = set()
     active = set()
@@ -966,6 +974,7 @@ def initializeFile(ilocFilePath):
         return False
 
 #OpCode=0, SR1=1,  VR1=2,  PR1=3,  NU1=4,  SR2,  VR2,  PR2,  NU2,  SR3,  VR3,  PR3,  NU3 
+nodes = []
 maxLive = 0
 maxVR = 0
 irHead = None
