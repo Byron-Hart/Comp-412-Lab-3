@@ -798,6 +798,7 @@ def writedependencepriorities(nodes, edges, file):
 def postorder(root):
     totalroottime = 0
     totaltemptime = 0
+    totalsettime = 0
     currentRootIndex = 0
     currentLatency = 0
     stack = []
@@ -827,11 +828,15 @@ def postorder(root):
         start = time.time()
 
         temp = stack.pop()
+        start = time.time()
         descendants = set()
         for child in temp[0].children:
             descendants = descendants.union(child.descendants)
-            descendants.add(child.num)        
+            descendants.add(child.num)   
         temp[0].descendants = descendants
+        end = time.time()
+        totalsettime += end-start
+
         if currentLatency > temp[0].latencyToRoot:
             temp[0].latencyToRoot = currentLatency
         if temp[0].ilocType[0] == 0:
@@ -843,6 +848,8 @@ def postorder(root):
 
         
         while (len(stack) != 0 and temp[1] == len(stack[-1][0].children) - 1):
+            start = time.time()
+
             temp = stack.pop()
 
             descendants = set()
@@ -851,6 +858,9 @@ def postorder(root):
                 descendants.add(child.num)
             
             temp[0].descendants = descendants
+            end = time.time()
+            totalsettime += end-start
+
             if currentLatency > temp[0].latencyToRoot:
                 temp[0].latencyToRoot = currentLatency
             if temp[0].ilocType[0] == 0:
@@ -870,6 +880,8 @@ def postorder(root):
     print(totalroottime)
     print("Total temp time")
     print(totaltemptime)
+    print("Total set time")
+    print(totalsettime)
  
 def calculatePriorities():
     global nodes
