@@ -799,6 +799,7 @@ def postorder(root):
     totalroottime = 0
     totaltemptime = 0
     totalsettime = 0
+    totaluniontime = 0
     currentRootIndex = 0
     currentLatency = 0
     stack = []
@@ -834,7 +835,10 @@ def postorder(root):
         for child in temp[0].children:
             descendantslist.append(child.descendants)
             descendants.add(child.num) 
+        startunion = time.time()
         descendants = descendants.union(*descendantslist)
+        endunion = time.time()
+        totaluniontime += endunion-startunion
         temp[0].descendants = descendants
         end = time.time()
         totalsettime += end-start
@@ -859,7 +863,10 @@ def postorder(root):
             for child in temp[0].children:
                 descendantslist.append(child.descendants)
                 descendants.add(child.num) 
+            startunion = time.time()
             descendants = descendants.union(*descendantslist)
+            endunion = time.time()
+            totaluniontime += endunion-startunion
             temp[0].descendants = descendants
             end = time.time()
             totalsettime += end-start
@@ -885,6 +892,8 @@ def postorder(root):
     print(totaltemptime)
     print("Total set time")
     print(totalsettime)
+    print("Total union time")
+    print(totaluniontime)
  
 def calculatePriorities():
     global nodes
