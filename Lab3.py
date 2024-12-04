@@ -21,7 +21,8 @@ class ScheduleNode:
         self.vr1 = vr1
         self.vr2 = vr2
         self.vr3 = vr3
-        self.descendants = set()
+        self.descendants = 0
+        self.visited = False
         self.latencyToRoot = 0
         self.priority = 0
         self.children = []
@@ -802,18 +803,24 @@ def postorder(root):
     totaluniontime = 0
     currentRootIndex = 0
     currentLatency = 0
+    viewedNodes = 0
     stack = []
  
     while (root != None or len(stack) != 0):
         if (root != None):
             start = time.time()
+            if root.visited:
+                viewedNodes -= 1
             if root.ilocType[0] == 0:
                 currentLatency += 6
             elif root.ilocType == (2,2):
                 currentLatency += 3
             else:
                 currentLatency += 1
-            stack.append((root, currentRootIndex, currentLatency))
+            print("Root")
+            print(root.num)
+            print()
+            stack.append((root, currentRootIndex, currentLatency, viewedNodes))
             currentRootIndex = 0
  
             if (len(root.children) >= 1):
@@ -828,9 +835,9 @@ def postorder(root):
         
         starttemp = time.time()
 
-        start = time.time()
+        #start = time.time()
         temp = stack.pop()
-        descendants = set()
+        """descendants = set()
         descendantslist = []
         for child in temp[0].children:
             descendantslist.append(child.descendants)
@@ -841,8 +848,18 @@ def postorder(root):
         totaluniontime += endunion-startunion
         temp[0].descendants = descendants
         end = time.time()
-        totalsettime += end-start
-
+        totalsettime += end-start"""
+        if not temp[0].visited:
+            temp[0].descendants += viewedNodes - temp[3]
+            print("Node descendants")
+            print(temp[0].num)
+            print(temp[0].descendants)
+            print(viewedNodes)
+            print(temp[3])
+            print()
+        viewedNodes += 1
+        temp[0].visited = True
+        
         if currentLatency > temp[0].latencyToRoot:
             temp[0].latencyToRoot = currentLatency
         if temp[0].ilocType[0] == 0:
@@ -854,11 +871,11 @@ def postorder(root):
 
         
         while (len(stack) != 0 and temp[1] == len(stack[-1][0].children) - 1):
-            start = time.time()
+            #start = time.time()
 
             temp = stack.pop()
 
-            descendants = set()
+            """descendants = set()
             descendantslist = []
             for child in temp[0].children:
                 descendantslist.append(child.descendants)
@@ -869,7 +886,17 @@ def postorder(root):
             totaluniontime += endunion-startunion
             temp[0].descendants = descendants
             end = time.time()
-            totalsettime += end-start
+            totalsettime += end-start"""
+            if not temp[0].visited:
+                temp[0].descendants += viewedNodes - temp[3]
+                print("Node descendants")
+                print(temp[0].num)
+                print(temp[0].descendants)
+                print(viewedNodes)
+                print(temp[3])
+                print()
+            viewedNodes += 1
+            temp[0].visited = True
 
             if currentLatency > temp[0].latencyToRoot:
                 temp[0].latencyToRoot = currentLatency
@@ -915,7 +942,7 @@ def calculatePriorities():
     
     start = time.time()
     for node in nodes:
-        node.priority = 10 * node.latencyToRoot + len(node.descendants)
+        node.priority = 10 * node.latencyToRoot + node.descendants
     end = time.time()
     print("Calc priorities")
     print(end-start)
