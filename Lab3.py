@@ -1,6 +1,5 @@
 import math
 import sys
-import time 
 
 class IRnode:
     def __init__(self, data):
@@ -850,9 +849,99 @@ def schedule():
     cycle = 1
     ready = set()
     active = set()
-    """for node in nodes:
-        if node.children == []:"""
-    #TODO    
+    schedule = []
+    
+    nopNode = ScheduleNode(0, (4, 0), 0, 0, 0)
+    nopNode.latency = 1
+    
+    #Set ready set
+    for node in nodes:
+        node.children = set(node.children)
+        if len(node.children) == 0:
+            ready.add(node)
+            
+    while (ready.union(active) != set()):
+        #Determine max priority nodes and functional units
+        maxPrio = 0
+        firstNode = nopNode
+        secPrio = 0
+        secondNode = nopNode
+        for node in ready:
+            if node.priority > maxPrio:
+                maxPrio = node.priority
+                firstNode = node
+            elif node.priority > secPrio:
+                secPrio = node.priority
+                secondNode = node  
+        if firstNode.latency == secondNode.latency and firstNode.latency != 1:
+            secPrio = 0
+            secondNode = nopNode
+            for node in ready:
+                if node.priority > secPrio and node.latency != firstNode.latency:
+                    secPrio = node.priority
+                    secondNode = node  
+        if firstNode.latency == 3 or secondNode.latency == 6:
+            tempNode = firstNode
+            firstNode = secondNode
+            secondNode = tempNode
+            
+        #Add to schedule and active set
+        schedule.append((firstNode, secondNode))
+        if firstNode.num != 0:
+            ready.remove(firstNode)
+            active.add(firstNode)
+        if secondNode.num != 0:
+            ready.remove(secondNode)
+            active.add(secondNode)
+
+        cycle += 1
+        
+        #Retire finished nodes, add nodes made ready by retirement
+        toremove = set()
+        for node in active:
+            node.latency -= 1
+            if node.latency == 0:
+                toremove.add(node)
+                for edge in node.edges:
+                    edge[1].children.remove(node)
+                    if len(edge[1].children) == 0:
+                        ready.add(edge[1])
+                        
+        for node in toremove:
+            active.remove(node)
+            
+    return schedule
+                    
+def printSchedule(data, file):
+    units = []
+    
+    for node in data:
+        if node.ilocType[0] == 0:  
+            if node.ilocType[1] == 0:
+                units.append("load r%i => r%i" % (node.vr1, node.vr3))
+            else:
+                units.append("store r%i => r%i" % (node.vr1, node.vr3))
+        elif node.ilocType[0] == 1:  
+                units.append("loadI %i => r%i" % (node.vr1, node.vr3))
+        elif node.ilocType[0] == 2:          
+            if node.ilocType[1] == 0:  
+                units.append("add r%i , r%i => r%i" % (node.vr1, node.vr2, node.vr3))
+            elif node.ilocType[1] == 1:
+                units.append("sub r%i , r%i => r%i" % (node.vr1, node.vr2, node.vr3))
+            elif node.ilocType[1] == 2:   
+                units.append("mult r%i , r%i => r%i" % (node.vr1, node.vr2, node.vr3))
+            elif node.ilocType[1] == 3:  
+                units.append("lshift r%i , r%i => r%i" % (node.vr1, node.vr2, node.vr3))
+            else:
+                units.append("rshift r%i , r%i => r%i" % (node.vr1, node.vr2, node.vr3))
+        elif node.ilocType[0] == 3:
+            units.append("output %i" % (node.vr1))
+        else:
+            units.append("nop")
+    
+    fullstring = "[%s; %s]\n" % (units[0], units[1])
+    print(fullstring)
+    file.write(fullstring)
     
 def printIRwithVR(data, file):
     if data[0][0] == 0:  
@@ -904,19 +993,18 @@ def execute():
             dgfile.close
 
         calculatePriorities()
-        print(nodes[-1].priority)
+        nodeSchedule = schedule()
 
         if gflag:
             dgpfile = open("dependencegraphpriorities.dot", "w")
             writedependencepriorities(nodes, edges, dgpfile)
             dgpfile.close
         
-        file = open("renamed.i", "w")
+        file = open("scheduled.i", "w")
         #TODO
-        curr = irHead
-        while curr.data[0][0] != 9:
-            #printIRwithVR(curr.data, file)
-            curr = curr.next
+        for cycle in nodeSchedule:
+            printSchedule(cycle, file)
+            
         file.close()
     else:
         print_error("Since there were errors in the input file, IR is not printed.")
@@ -956,7 +1044,6 @@ def initializeFile(ilocFilePath):
         print(helpstring)
         return False
 
-start = time.time()
 #OpCode=0, SR1=1,  VR1=2,  PR1=3,  NU1=4,  SR2,  VR2,  PR2,  NU2,  SR3,  VR3,  PR3,  NU3 
 nodes = []
 maxLive = 0
@@ -995,5 +1082,3 @@ else:
     else:
         if initializeFile(sys.argv[1]):
             execute()
-end = time.time()
-print(end-start)
