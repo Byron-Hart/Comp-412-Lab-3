@@ -21,7 +21,6 @@ class ScheduleNode:
         self.vr1 = vr1
         self.vr2 = vr2
         self.vr3 = vr3
-        self.visited = False
         self.descendants = set()
         self.latencyToRoot = 0
         self.priority = 0
@@ -794,13 +793,6 @@ def writedependencepriorities(nodes, edges, file):
             file.write('%i -> %i[label="Data, r%i"];\n' % (edge[1], edge[2], edge[0]))
     file.write("}")
 
-def getLatency(ilocType):
-    if ilocType[0] == 0:
-        return 6
-    if ilocType == (2,2):
-        return 3
-    return 1
-
 def postorder(root):
  
     currentRootIndex = 0
@@ -809,7 +801,12 @@ def postorder(root):
  
     while (root != None or len(stack) != 0):
         if (root != None):
-            currentLatency += getLatency(root.ilocType) 
+            if root.ilocType[0] == 0:
+                currentLatency += 6
+            elif root.ilocType == (2,2):
+                currentLatency += 3
+            else:
+                currentLatency += 1
             stack.append((root, currentRootIndex, currentLatency))
             currentRootIndex = 0
  
@@ -827,7 +824,13 @@ def postorder(root):
         temp[0].descendants = descendants
         if currentLatency > temp[0].latencyToRoot:
             temp[0].latencyToRoot = currentLatency
-        currentLatency -= getLatency(temp[0].ilocType)
+        if temp[0].ilocType[0] == 0:
+            currentLatency -= 6
+        elif temp[0].ilocType == (2,2):
+            currentLatency -= 3
+        else:
+            currentLatency -= 1
+
         
         while (len(stack) != 0 and temp[1] == len(stack[-1][0].children) - 1):
             temp = stack.pop()
@@ -840,11 +843,14 @@ def postorder(root):
             temp[0].descendants = descendants
             if currentLatency > temp[0].latencyToRoot:
                 temp[0].latencyToRoot = currentLatency
-            currentLatency -= getLatency(temp[0].ilocType)
+            if temp[0].ilocType[0] == 0:
+                currentLatency -= 6
+            elif temp[0].ilocType == (2,2):
+                currentLatency -= 3
+            else:
+                currentLatency -= 1
 
- 
-        if (len(stack) != 0):
- 
+        if (len(stack) != 0): 
             root = stack[-1][0].children[temp[1] + 1]
             currentRootIndex = temp[1] + 1
  
