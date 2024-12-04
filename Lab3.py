@@ -909,7 +909,7 @@ def printIRwithVR(data, file):
         print("EOF")
         
 def execute():
-    global irHead, success
+    global irHead, success, nodes
     parse()
     
     if success:
@@ -922,6 +922,7 @@ def execute():
             dgfile.close
 
         calculatePriorities()
+        print(nodes[-1].priority)
 
         if gflag:
             dgpfile = open("dependencegraphpriorities.dot", "w")
