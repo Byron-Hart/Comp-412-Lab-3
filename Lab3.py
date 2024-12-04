@@ -802,41 +802,29 @@ def calculatePriorities(nodes):
     for node in nodes:
         if node.edges == []:
             roots.append(node)
-            node.latencyToRoot = getLatency(node.ilocType)
             
     for root in roots:
-        for node in nodes:
-            node.visited = False
-        stack = []
-        stack.append((root, 0))
-        while (len(stack)): 
-            currNode = stack[-1][0]
-            latency = stack[-1][1]
-            currLatency = latency + getLatency(currNode.ilocType)
-            if currLatency > currNode.latencyToRoot:
-                currNode.latencyToRoot = currLatency
-
-            stack.pop()
-            if (not currNode.visited):
-                allvisited = True
-                for child in currNode.children:
-                    if not child.visited:
-                        allvisited = False
-                if not allvisited:
-                    #stack.append((currNode, latency))
-                    for child in currNode.children:
-                        if not child.visited:    
-                            stack.append((child, currLatency))
-
-                if allvisited:
-                    descendants = set()
-                    for child in currNode.children:
-                        descendants = descendants.union(child.descendants)
-                        descendants.add(child.num)
-                    currNode.descendants = descendants
-                    currNode.priority = 10 * currNode.latencyToRoot + len(currNode.descendants)
-                    currNode.visited = True
-            
+        priorityHelp(root, 0)
+        
+def priorityHelp(node, latency):
+    rootLatency = latency + getLatency(node.ilocType)
+    
+    if rootLatency > node.latencyToRoot:
+        node.latencyToRoot = rootLatency
+    
+    for child in node.children:
+        if not child.visited:
+            priorityHelp(child, rootLatency)
+    
+    descendants = set()
+    for child in node.children:
+        descendants = descendants.union(child.descendants)
+        descendants.add(child.num)
+    
+    node.descendants = descendants
+    
+    node.priority = 10 * node.latencyToRoot + len(node.descendants)
+    
 def schedule(nodes):
     cycle = 1
     ready = set()
@@ -893,7 +881,7 @@ def execute():
             dgfile = open("dependencegraph.dot", "w")
             writedependence(nodes, edges, dgfile)
             dgfile.close
-
+        
         calculatePriorities(nodes)
 
         if gflag:
