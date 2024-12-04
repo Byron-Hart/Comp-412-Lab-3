@@ -13,6 +13,23 @@ class IRnode:
         printIR(self)
         return ""
 
+class ScheduleNode:
+    def __init__(self, num, ilocType, vr1, vr2, vr3):
+        self.num = num
+        self.ilocType = ilocType
+        self.vr1 = vr1
+        self.vr2 = vr2
+        self.vr3 = vr3
+        self.visited = False
+        self.descendants = set()
+        self.latencyToRoot = 0
+        self.priority = 0
+        self.children = []
+        self.edges = []
+        
+    def __str__(self):
+        return str(self.num)
+
 def insertIR(data):
     global irHead
     
@@ -588,7 +605,7 @@ def dependence():
     dependencemap = {}
     cycle = 1
     
-    #Format = (index, type, vr1, vr2, vr3)
+    #Format = (index, type, vr1, vr2, vr3, visited, descendants, edges)
     nodes = []
     
     #Format = (x, y, z), where x = -1 means conflict edge, x = -2 means 
@@ -607,66 +624,97 @@ def dependence():
         #Make node
         #If eliminates NOPs
         if currNode.data[0][0] >= 0 and currNode.data[0][0] <= 3:
-            nodes.append((cycle, currNode.data[0], currNode.data[2], currNode.data[6], currNode.data[10]))
-        
-        #Load
-        if currNode.data[0] == (0,0):
-            #Defines
-            dependencemap[currNode.data[10]] = cycle
+            node = ScheduleNode(cycle, currNode.data[0], currNode.data[2], currNode.data[6], currNode.data[10])
             
-            #Uses
-            edges.append((currNode.data[2], cycle, dependencemap[currNode.data[2]]))
-            
-            #Conflict to most recent store
-            if recentStore is not None:
-                edges.append((-1, cycle, recentStore))
+            #Load
+            if currNode.data[0] == (0,0):
+                #Defines
+                dependencemap[currNode.data[10]] = cycle
                 
-            allLoads.append(cycle)
+                #Uses
+                otherNode = dependencemap[currNode.data[2]]
+                edges.append((currNode.data[2], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[2], cycle, otherNode))
+                node.children.append(nodes[otherNode - 1])
+                
+                #Conflict to most recent store
+                if recentStore is not None:
+                    edges.append((-1, cycle, recentStore))
+                    nodes[recentStore - 1].edges.append((-1, cycle, recentStore))
+                    node.children.append(nodes[recentStore - 1])
 
-        #Store
-        if currNode.data[0] == (0,1):
-            #Uses
-            edges.append((currNode.data[2], cycle, dependencemap[currNode.data[2]]))
-            edges.append((currNode.data[10], cycle, dependencemap[currNode.data[10]]))
-                         
-            #Serialization/Conflict edges
-            if recentStore is not None:
-                edges.append((-2, cycle, recentStore))
-                
-            for load in allLoads:
-                edges.append((-2, cycle, load))
-                
-            for output in allOutputs:
-                edges.append((-2, cycle, output))
-                
-            recentStore = cycle
+                allLoads.append(cycle)
+    
+            #Store
+            if currNode.data[0] == (0,1):
+                #Uses
+                otherNode = dependencemap[currNode.data[2]]
+                edges.append((currNode.data[2], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[2], cycle, otherNode))
+                node.children.append(nodes[otherNode - 1])
 
-        #LoadI
-        if currNode.data[0][0] == 1:
-            #Defines
-            dependencemap[currNode.data[10]] = cycle
+                otherNode = dependencemap[currNode.data[10]]
+                edges.append((currNode.data[10], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[10], cycle, otherNode))
+                node.children.append(nodes[otherNode - 1])
+         
+                #Serialization/Conflict edges
+                if recentStore is not None:
+                    edges.append((-2, cycle, recentStore))
+                    nodes[recentStore - 1].edges.append((-2, cycle, recentStore))
+                    node.children.append(nodes[recentStore - 1])
+                    
+                for load in allLoads:
+                    edges.append((-2, cycle, load))
+                    nodes[load - 1].edges.append((-2, cycle, load))
+                    node.children.append(nodes[load - 1])
+                    
+                for output in allOutputs:
+                    edges.append((-2, cycle, output))
+                    nodes[output - 1].edges.append((-2, cycle, output))
+                    node.children.append(nodes[output - 1])
+                    
+                recentStore = cycle
+    
+            #LoadI
+            if currNode.data[0][0] == 1:
+                #Defines
+                dependencemap[currNode.data[10]] = cycle
+    
+            #Arithop
+            if currNode.data[0][0] == 2: 
+                #Defines
+                dependencemap[currNode.data[10]] = cycle
+    
+                #Uses
+                otherNode = dependencemap[currNode.data[2]]
+                edges.append((currNode.data[2], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[2], cycle, otherNode))
+                node.children.append(nodes[otherNode - 1])
 
-        #Arithop
-        if currNode.data[0][0] == 2: 
-            #Defines
-            dependencemap[currNode.data[10]] = cycle
-
-            #Uses
-            edges.append((currNode.data[2], cycle, dependencemap[currNode.data[2]]))
-            edges.append((currNode.data[6], cycle, dependencemap[currNode.data[6]]))
-
-        if currNode.data[0][0] == 3:        
-            #Serialization to most recent output
-            if recentOutput is not None:
-                edges.append((-2, cycle, recentOutput))
+                otherNode = dependencemap[currNode.data[6]]
+                edges.append((currNode.data[6], cycle, otherNode))
+                nodes[otherNode - 1].edges.append((currNode.data[6], cycle, otherNode))
+                node.children.append(nodes[otherNode - 1])
+    
+            if currNode.data[0][0] == 3:        
+                #Serialization to most recent output
+                if recentOutput is not None:
+                    edges.append((-2, cycle, recentOutput))
+                    nodes[recentOutput - 1].edges.append((-2, cycle, recentOutput))
+                    node.children.append(nodes[recentOutput - 1])
+                    
+                #Conflict to most recent store
+                if recentStore is not None:
+                    edges.append((-1, cycle, recentStore))
+                    nodes[recentStore - 1].edges.append((-1, cycle, recentStore))
+                    node.children.append(nodes[recentStore - 1])
+                    
+                recentOutput = cycle
+                allOutputs.append(cycle)
                 
-            #Conflict to most recent store
-            if recentStore is not None:
-                edges.append((-1, cycle, recentStore))
-                
-            recentOutput = cycle
-            allOutputs.append(cycle)
-            
+            nodes.append(node)
+           
         currNode = currNode.next
         cycle += 1
     return nodes,edges
@@ -674,26 +722,29 @@ def dependence():
 def writedependence(nodes, edges, file):
     file.write("digraph DependenceGraph{\n")
     for node in nodes:
-        if node[1][0] == 0:  
-            if node[1][1] == 0:
-                file.write('%i[label="%i: load r%i => r%i"];\n' % (node[0], node[0], node[2], node[4]))
+        """print(node.children)
+        print(node.edges)
+        print()"""
+        if node.ilocType[0] == 0:  
+            if node.ilocType[1] == 0:
+                file.write('%i[label="%i: load r%i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr3))
             else:
-                file.write('%i[label="%i: store r%i => r%i"];\n' % (node[0], node[0], node[2], node[4]))
-        elif node[1][0] == 1:  
-                file.write('%i[label="%i: loadI %i => r%i"];\n' % (node[0], node[0], node[2], node[4]))
-        elif node[1][0] == 2:          
-            if node[1][1] == 0:  
-                file.write('%i[label="%i: add r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
-            elif node[1][1] == 1:
-                file.write('%i[label="%i: sub r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
-            elif node[1][1] == 2:   
-                file.write('%i[label="%i: mult r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
-            elif node[1][1] == 3:  
-                file.write('%i[label="%i: lshift r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
+                file.write('%i[label="%i: store r%i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr3))
+        elif node.ilocType[0] == 1:  
+                file.write('%i[label="%i: loadI %i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr3))
+        elif node.ilocType[0] == 2:          
+            if node.ilocType[1] == 0:  
+                file.write('%i[label="%i: add r%i, r%i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3))
+            elif node.ilocType[1] == 1:
+                file.write('%i[label="%i: sub r%i, r%i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3))
+            elif node.ilocType[1] == 2:   
+                file.write('%i[label="%i: mult r%i, r%i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3))
+            elif node.ilocType[1] == 3:  
+                file.write('%i[label="%i: lshift r%i, r%i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3))
             else:
-                file.write('%i[label="%i: rshift r%i, r%i => r%i"];\n' % (node[0], node[0], node[2], node[3], node[4]))
-        elif node[1][0] == 3:
-            file.write('%i[label="%i: output %i"];\n' % (node[0], node[0], node[2]))
+                file.write('%i[label="%i: rshift r%i, r%i => r%i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3))
+        elif node.ilocType[0] == 3:
+            file.write('%i[label="%i: output %i"];\n' % (node.num, node.num, node.vr1))
     for edge in edges:
         if edge[0] == -2:
             file.write('%i -> %i[label="Serialization"];\n' % (edge[1], edge[2]))
@@ -702,9 +753,96 @@ def writedependence(nodes, edges, file):
         else:
             file.write('%i -> %i[label="Data, r%i"];\n' % (edge[1], edge[2], edge[0]))
     file.write("}")
-    
-def schedule():
-    print()
+
+def writedependencepriorities(nodes, edges, file):
+    file.write("digraph DependenceGraph{\n")
+    for node in nodes:
+        """print(node.num)
+        print(node.children)
+        print(node.edges)
+        print()"""
+        if node.ilocType[0] == 0:  
+            if node.ilocType[1] == 0:
+                file.write('%i[label="%i: load r%i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr3, node.priority))
+            else:
+                file.write('%i[label="%i: store r%i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr3, node.priority))
+        elif node.ilocType[0] == 1:  
+                file.write('%i[label="%i: loadI %i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr3, node.priority))
+        elif node.ilocType[0] == 2:          
+            if node.ilocType[1] == 0:  
+                file.write('%i[label="%i: add r%i, r%i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3, node.priority))
+            elif node.ilocType[1] == 1:
+                file.write('%i[label="%i: sub r%i, r%i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3, node.priority))
+            elif node.ilocType[1] == 2:   
+                file.write('%i[label="%i: mult r%i, r%i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3, node.priority))
+            elif node.ilocType[1] == 3:  
+                file.write('%i[label="%i: lshift r%i, r%i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3, node.priority))
+            else:
+                file.write('%i[label="%i: rshift r%i, r%i => r%i, priority %i"];\n' % (node.num, node.num, node.vr1, node.vr2, node.vr3, node.priority))
+        elif node.ilocType[0] == 3:
+            file.write('%i[label="%i: output %i, priority %i"];\n' % (node.num, node.num, node.vr1, node.priority))
+    for edge in edges:
+        if edge[0] == -2:
+            file.write('%i -> %i[label="Serialization"];\n' % (edge[1], edge[2]))
+        elif edge[0] == -1:
+            file.write('%i -> %i[label="Conflict"];\n' % (edge[1], edge[2]))
+        else:
+            file.write('%i -> %i[label="Data, r%i"];\n' % (edge[1], edge[2], edge[0]))
+    file.write("}")
+
+def getLatency(ilocType):
+    if ilocType[0] == 0:
+        return 6
+    if ilocType == (2,2):
+        return 3
+    return 1
+
+def calculatePriorities(nodes):
+    roots = []
+    for node in nodes:
+        if node.edges == []:
+            roots.append(node)
+            node.latencyToRoot = getLatency(node.ilocType)
+            
+    for root in roots:
+        for node in nodes:
+            node.visited = False
+        stack = []
+        stack.append((root, 0))
+        while (len(stack)): 
+            currNode = stack[-1][0]
+            latency = stack[-1][1]
+            currLatency = latency + getLatency(currNode.ilocType)
+            if currLatency > currNode.latencyToRoot:
+                currNode.latencyToRoot = currLatency
+
+            stack.pop()
+            if (not currNode.visited):
+                allvisited = True
+                for child in currNode.children:
+                    if not child.visited:
+                        allvisited = False
+                if not allvisited:
+                    #stack.append((currNode, latency))
+                    for child in currNode.children:
+                        if not child.visited:    
+                            stack.append((child, currLatency))
+
+                if allvisited:
+                    descendants = set()
+                    for child in currNode.children:
+                        descendants = descendants.union(child.descendants)
+                        descendants.add(child.num)
+                    currNode.descendants = descendants
+                    currNode.priority = 10 * currNode.latencyToRoot + len(currNode.descendants)
+                    currNode.visited = True
+            
+def schedule(nodes):
+    cycle = 1
+    ready = set()
+    active = set()
+    """for node in nodes:
+        if node.children == []:"""
     #TODO    
     
 def printIRwithVR(data, file):
@@ -755,14 +893,21 @@ def execute():
             dgfile = open("dependencegraph.dot", "w")
             writedependence(nodes, edges, dgfile)
             dgfile.close
-            
-        """file = open("scheduledILOC.i", "w")
+
+        calculatePriorities(nodes)
+
+        if gflag:
+            dgpfile = open("dependencegraphpriorities.dot", "w")
+            writedependencepriorities(nodes, edges, dgpfile)
+            dgpfile.close
+        
+        file = open("renamed.i", "w")
         #TODO
         curr = irHead
         while curr.data[0][0] != 9:
-            printIRwithVR(curr.data, file)
+            #printIRwithVR(curr.data, file)
             curr = curr.next
-        file.close()"""
+        file.close()
     else:
         print_error("Since there were errors in the input file, IR is not printed.")
         
