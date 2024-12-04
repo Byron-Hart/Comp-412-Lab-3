@@ -797,45 +797,64 @@ def getLatency(ilocType):
         return 3
     return 1
 
+def postorder(root):
+ 
+    currentRootIndex = 0
+    currentLatency = 0
+    stack = []
+ 
+    while (root != None or len(stack) != 0):
+        if (root != None):
+            currentLatency += getLatency(root.ilocType) 
+            stack.append((root, currentRootIndex, currentLatency))
+            currentRootIndex = 0
+ 
+            if (len(root.children) >= 1):
+                root = root.children[0]
+            else:
+                root = None
+            continue
+ 
+        temp = stack.pop()
+        descendants = set()
+        for child in temp[0].children:
+            descendants = descendants.union(child.descendants)
+            descendants.add(child.num)        
+        temp[0].descendants = descendants
+        if currentLatency > temp[0].latencyToRoot:
+            temp[0].latencyToRoot = currentLatency
+        currentLatency -= getLatency(temp[0].ilocType)
+        
+        while (len(stack) != 0 and temp[1] == len(stack[-1][0].children) - 1):
+            temp = stack.pop()
+
+            descendants = set()
+            for child in temp[0].children:
+                descendants = descendants.union(child.descendants)
+                descendants.add(child.num)
+            
+            temp[0].descendants = descendants
+            if currentLatency > temp[0].latencyToRoot:
+                temp[0].latencyToRoot = currentLatency
+            currentLatency -= getLatency(temp[0].ilocType)
+
+ 
+        if (len(stack) != 0):
+ 
+            root = stack[-1][0].children[temp[1] + 1]
+            currentRootIndex = temp[1] + 1
+ 
 def calculatePriorities(nodes):
     roots = []
     for node in nodes:
         if node.edges == []:
             roots.append(node)
-            node.latencyToRoot = getLatency(node.ilocType)
             
     for root in roots:
-        for node in nodes:
-            node.visited = False
-        stack = []
-        stack.append((root, 0))
-        while (len(stack)): 
-            currNode = stack[-1][0]
-            latency = stack[-1][1]
-            currLatency = latency + getLatency(currNode.ilocType)
-            if currLatency > currNode.latencyToRoot:
-                currNode.latencyToRoot = currLatency
-
-            stack.pop()
-            if (not currNode.visited):
-                allvisited = True
-                for child in currNode.children:
-                    if not child.visited:
-                        allvisited = False
-                if not allvisited:
-                    #stack.append((currNode, latency))
-                    for child in currNode.children:
-                        if not child.visited:    
-                            stack.append((child, currLatency))
-
-                if allvisited:
-                    descendants = set()
-                    for child in currNode.children:
-                        descendants = descendants.union(child.descendants)
-                        descendants.add(child.num)
-                    currNode.descendants = descendants
-                    currNode.priority = 10 * currNode.latencyToRoot + len(currNode.descendants)
-                    currNode.visited = True
+        postorder(root)
+    
+    for node in nodes:
+        node.priority = 10 * node.latencyToRoot + len(node.descendants)
             
 def schedule(nodes):
     cycle = 1
@@ -977,7 +996,7 @@ if "-g" in sys.argv:
 if hflag:
     print(helpstring)
 else:
-    if lastArg < 2:
+    if lastArg < 1:
         print_error("ERROR: When no flags are selected, a filename leading to valid ILOC is necessary.")
         print(helpstring)  
     else:
