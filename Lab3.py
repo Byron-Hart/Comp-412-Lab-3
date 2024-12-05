@@ -1,5 +1,6 @@
 import math
 import sys
+from collections import defaultdict
 
 class IRnode:
     def __init__(self, data):
@@ -913,12 +914,9 @@ def schedule():
         #Find early finishers
         for node in active:
             if node.latency == 5:
-                edgecounts = {}
+                edgecounts = defaultdict(int)
                 for edge in node.edges:
-                    if edge[1].num not in edgecounts.keys():
-                        edgecounts[edge[1].num] = 1
-                    else:
-                        edgecounts[edge[1].num] += 1
+                    edgecounts[edge[1].num] += 1
                 for edge in node.edges:
                     if node in edge[1].children and edgecounts[edge[1].num] == 1:
                         edge[1].children.remove(node)
