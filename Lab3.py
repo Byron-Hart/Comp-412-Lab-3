@@ -925,11 +925,7 @@ def schedule():
                     edgecounts[edge[1].num] += 1
                 for edge in node.edges:
                     if node in edge[1].children and edgecounts[edge[1].num] == 1 and edge[1].status == 1 and edge[0] == -2:
-                        print("Edge remove")
-                        print(edge[1].children)
                         edge[1].children.remove(node)
-                        print(edge[1].children)
-                        print()
                         if len(edge[1].children) == 0:
                             ready.add(edge[1])
                             edge[1].status = 2
