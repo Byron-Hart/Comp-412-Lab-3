@@ -912,7 +912,7 @@ def schedule():
             active.remove(node)
         
         #Find early finishers
-        for node in active:
+        """for node in active:
             if node.latency == 5:
                 edgecounts = defaultdict(int)
                 for edge in node.edges:
@@ -921,9 +921,7 @@ def schedule():
                     if node in edge[1].children and edgecounts[edge[1].num] == 1:
                         edge[1].children.remove(node)
                     if len(edge[1].children) == 0:
-                        ready.add(edge[1])
-
-                    
+                        ready.add(edge[1])"""
             
     return schedule
 
