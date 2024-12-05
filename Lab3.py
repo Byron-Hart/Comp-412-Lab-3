@@ -915,7 +915,7 @@ def schedule():
             if node.latency == 5:
                 edgecounts = {}
                 for edge in node.edges:
-                    if not edgecounts[edge[1].num]:
+                    if edge[1].num not in edgecounts.keys():
                         edgecounts[edge[1].num] = 1
                     else:
                         edgecounts[edge[1].num] += 1
