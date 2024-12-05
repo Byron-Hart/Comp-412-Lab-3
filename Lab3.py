@@ -26,6 +26,7 @@ class ScheduleNode:
         self.priority = 0
         self.children = []
         self.edges = []
+        self.status = 1
         
     def __str__(self):
         return str(self.num)
@@ -860,6 +861,7 @@ def schedule():
         node.children = set(node.children)
         if len(node.children) == 0:
             ready.add(node)
+            node.status = 2
             
     while (ready.union(active) != set()):
         #Determine max priority nodes and functional units
@@ -891,9 +893,11 @@ def schedule():
         if firstNode.num != 0:
             ready.remove(firstNode)
             active.add(firstNode)
+            firstNode.status = 3
         if secondNode.num != 0:
             ready.remove(secondNode)
             active.add(secondNode)
+            secondNode.status = 3
 
         cycle += 1
         
@@ -904,24 +908,31 @@ def schedule():
             if node.latency == 0:
                 toremove.add(node)
                 for edge in node.edges:
-                    if node in edge[1].children:
+                    if node in edge[1].children and edge[1].status == 1:
                         edge[1].children.remove(node)
-                    if len(edge[1].children) == 0:
-                        ready.add(edge[1])
+                        if len(edge[1].children) == 0:
+                            ready.add(edge[1])
+                            edge[1].status = 2
         for node in toremove:
             active.remove(node)
+            node.status = 4
         
         #Find early finishers
         for node in active:
-            if node.latency == 5:
+            if node.latency == 5 or (node.latency == 2 and node.ilocType == (2,2)):
                 edgecounts = defaultdict(int)
                 for edge in node.edges:
                     edgecounts[edge[1].num] += 1
-                """for edge in node.edges:
-                    if node in edge[1].children and edgecounts[edge[1].num] == 1:
+                for edge in node.edges:
+                    if node in edge[1].children and edgecounts[edge[1].num] == 1 and edge[1].status == 1 and edge[0] == -2:
+                        print("Edge remove")
+                        print(edge[1].children)
                         edge[1].children.remove(node)
-                    if len(edge[1].children) == 0:
-                        ready.add(edge[1])"""
+                        print(edge[1].children)
+                        print()
+                        if len(edge[1].children) == 0:
+                            ready.add(edge[1])
+                            edge[1].status = 2
             
     return schedule
 
