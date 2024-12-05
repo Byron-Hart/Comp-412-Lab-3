@@ -912,8 +912,13 @@ def schedule():
             active.remove(node)
             
     return schedule
-                    
-def printSchedule(data, file):
+
+def printScheduleFile(data, file):
+    fullstring = printSchedule(data)
+    print(fullstring)
+    file.write(fullstring)  
+             
+def printSchedule(data):
     units = []
     
     for node in data:
@@ -941,8 +946,7 @@ def printSchedule(data, file):
             units.append("nop")
     
     fullstring = "[%s; %s]\n" % (units[0], units[1])
-    print(fullstring)
-    file.write(fullstring)
+    return fullstring
     
 def printIRwithVR(data, file):
     if data[0][0] == 0:  
@@ -1000,13 +1004,16 @@ def execute():
             dgpfile = open("dependencegraphpriorities.dot", "w")
             writedependencepriorities(nodes, edges, dgpfile)
             dgpfile.close
-        
-        file = open("scheduled.i", "w")
-        #TODO
-        for cycle in nodeSchedule:
-            printSchedule(cycle, file)
             
-        file.close()
+            file = open("scheduled.i", "w")
+            for cycle in nodeSchedule:
+                printScheduleFile(cycle, file)
+            file.close()
+        else:
+            for cycle in nodeSchedule:
+                fullstring = printSchedule(cycle)
+                print(fullstring)
+
     else:
         print_error("Since there were errors in the input file, IR is not printed.")
         
